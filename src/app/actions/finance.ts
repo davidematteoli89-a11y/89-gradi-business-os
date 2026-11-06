@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { parseEuro } from "@/lib/money";
-import { dataMode } from "@/lib/data/source";
-import { getDataset } from "@/lib/data/source";
+import { dataMode, getDataset } from "@/lib/data/source";
 import { validateNewPayment } from "@/lib/domain/documents";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   RECEIPT_MAX_BYTES,
   RECEIPT_MIME,
   incomePaymentSchema,
+  partnerMovementSchema,
   quickExpenseSchema,
   type ActionResult,
 } from "@/lib/validation/finance";
@@ -131,4 +131,26 @@ export async function signedReceiptUrl(path: string): Promise<string | null> {
   const sb = await createSupabaseServerClient();
   const { data } = await sb.storage.from("documenti").createSignedUrl(path, 60 * 5);
   return data?.signedUrl ?? null;
+}
+
+export async function registerPartnerMovement(input: unknown): Promise<ActionResult> {
+  const parsed = partnerMovementSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, message: "Controlla i campi evidenziati.", fieldErrors: fieldErrors(parsed.error.issues) };
+  const denied = await assertCanEdit();
+  if (denied) return denied;
+  const v = parsed.data;
+  if (dataMode() === "demo") return { ok: true, message: "Movimento verificato. Modalità demo: non è stato salvato." };
+  const sb = await createSupabaseServerClient();
+  const { error } = await sb.from("partner_movements").insert({
+    partner_id: v.partnerId,
+    counterpart_partner_id: v.type === "compensazione" ? v.counterpartPartnerId : null,
+    type: v.type,
+    account: v.type === "versamento" || v.type === "compensazione" ? (v.account ?? "finanziamento") : null,
+    amount_cents: parseEuro(v.amount)!,
+    occurred_on: v.date,
+    description: v.description ?? "",
+  });
+  if (error) return { ok: false, message: `Movimento non salvato: ${error.message}` };
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Movimento registrato" };
 }

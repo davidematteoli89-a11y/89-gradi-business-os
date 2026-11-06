@@ -228,3 +228,20 @@ describe("vincoli contabili", () => {
     await expect(as(U.admin, () => db.query(`delete from public.audit_log`))).rejects.toThrow();
   });
 });
+
+describe("seed dimostrativo", () => {
+  it("è bloccato senza consenso esplicito", async () => {
+    const seed = readFileSync(join(process.cwd(), "supabase", "seed", "demo.sql"), "utf8");
+    const fresh = new PGlite();
+    await fresh.exec(SUPABASE_STUB);
+    for (const file of readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort()) {
+      await fresh.exec(readFileSync(join(MIGRATIONS, file), "utf8"));
+    }
+    await expect(fresh.exec(seed)).rejects.toThrow(/Seed demo bloccato/);
+    await fresh.exec("set app.allow_demo_seed = 'on';");
+    await fresh.exec(seed);
+    const r = await fresh.query<{ n: number }>("select count(*)::int as n from public.events");
+    expect(r.rows[0].n).toBe(1);
+    await fresh.close();
+  }, 60_000);
+});

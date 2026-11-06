@@ -239,10 +239,10 @@ export function listDocuments(ds: DS, f: FinanceFilter) {
 export function financeOverview(ds: DS) {
   const docs = documentsWithBalance(ds);
   const yearStart = `${ds.today.slice(0, 4)}-01-01`;
-  const rows = monthlyReport({ from: yearStart, to: ds.today, documents: ds.documents, payments: ds.payments, vatMode: ds.vatMode });
+  const rows = monthlyReport({ from: yearStart, to: ds.today, documents: ds.documents, payments: ds.payments, movements: ds.movements, vatMode: ds.vatMode });
   const t = totals(rows);
   const allTime = totals(
-    monthlyReport({ from: "2000-01-01", to: ds.today, documents: ds.documents, payments: ds.payments, vatMode: ds.vatMode }),
+    monthlyReport({ from: "2000-01-01", to: ds.today, documents: ds.documents, payments: ds.payments, movements: ds.movements, vatMode: ds.vatMode }),
   );
   return {
     year: ds.today.slice(0, 4),

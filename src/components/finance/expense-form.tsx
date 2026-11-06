@@ -75,15 +75,16 @@ export function ExpenseForm({ data, onDone, defaultEventId }: { data: ExpenseFor
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    if (!file || !file.type.startsWith("image/")) {
-      setPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+  const previewRef = useRef<string | null>(null);
+  const pickFile = (f: File | null) => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = f && f.type.startsWith("image/") ? URL.createObjectURL(f) : null;
+    setPreview(previewRef.current);
+    setFile(f);
+  };
+  useEffect(() => () => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+  }, []);
 
   const cents = parseEuro(String(amount ?? ""));
   const split = cents && cents > 0 ? splitGross(cents, Number(vatBp)) : null;
@@ -292,7 +293,7 @@ export function ExpenseForm({ data, onDone, defaultEventId }: { data: ExpenseFor
                 e.target.value = "";
                 return;
               }
-              setFile(f);
+              pickFile(f);
             }}
           />
           {file ? (
@@ -314,7 +315,7 @@ export function ExpenseForm({ data, onDone, defaultEventId }: { data: ExpenseFor
                 aria-label="Rimuovi ricevuta"
                 className="grid size-9 place-items-center rounded-full text-ash hover:bg-sand hover:text-ink"
                 onClick={() => {
-                  setFile(null);
+                  pickFile(null);
                   if (fileRef.current) fileRef.current.value = "";
                 }}
               >

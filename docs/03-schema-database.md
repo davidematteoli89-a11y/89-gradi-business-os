@@ -34,7 +34,7 @@ Tutti gli importi sono **interi in centesimi** (`bigint`). Le aliquote IVA sono 
 |---|---|---|
 | Margine | documenti (competenza) | ricavi − costi attribuiti, per evento o servizio |
 | Utile distribuibile | margine totale − costi generali − ammortamenti/accantonamenti configurati | *da validare con il commercialista*; mostrato come stima |
-| Saldo di cassa | pagamenti | soldi effettivamente entrati − usciti |
+| Saldo di cassa | pagamenti dell'azienda + movimenti soci | denaro dell'azienda effettivamente entrato − uscito. Una spesa pagata da un socio non esce dalla cassa (diventa un anticipo); conferimenti, prestiti e versamenti entrano; rimborsi, restituzioni e prelievi escono; le compensazioni tra soci non la toccano |
 
 ## Tabelle
 

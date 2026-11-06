@@ -120,6 +120,7 @@
 }
 
 @utility panel {
+  min-width: 0; /* come elemento di griglia non deve allargarsi al contenuto */
   background: var(--ivory);
   border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 8px);

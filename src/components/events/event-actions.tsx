@@ -65,7 +65,7 @@ export function EventActions({ eventId, status, title }: { eventId: string; stat
           if (next === "annullato") setConfirm(next);
           else applyStatus(next);
         }}
-        className="w-48"
+        wrapperClassName="w-48"
       >
         {EVENT_STATUSES.map((s) => (
           <NativeSelectOption key={s.value} value={s.value}>

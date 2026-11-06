@@ -62,3 +62,20 @@ export const RECEIPT_MAX_BYTES = 12 * 1024 * 1024;
 export const RECEIPT_MIME = ["image/jpeg", "image/png", "image/heic", "image/heif", "image/webp", "application/pdf"];
 
 export type ActionResult = { ok: true; message: string; id?: string } | { ok: false; message: string; fieldErrors?: Record<string, string> };
+
+export const partnerMovementSchema = z
+  .object({
+    type: z.enum(["conferimento", "prestito", "restituzione_prestito", "rimborso", "versamento", "prelievo", "compensazione"]),
+    partnerId: z.string().min(1, "Scegli il socio"),
+    counterpartPartnerId: z.string().optional().or(z.literal("")),
+    account: z.enum(["finanziamento", "capitale"]).optional(),
+    amount: amountField,
+    date: isoDate,
+    description: z.string().trim().max(200).optional().or(z.literal("")),
+  })
+  .refine((v) => v.type !== "compensazione" || (v.counterpartPartnerId && v.counterpartPartnerId !== v.partnerId), {
+    message: "Per la compensazione scegli l'altro socio",
+    path: ["counterpartPartnerId"],
+  });
+
+export type PartnerMovementInput = z.input<typeof partnerMovementSchema>;

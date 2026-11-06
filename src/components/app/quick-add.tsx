@@ -38,8 +38,8 @@ export function QuickAdd({
         side={desktop ? "right" : "bottom"}
         className={
           desktop
-            ? "w-full gap-0 border-line bg-ivory p-0 sm:max-w-[460px]"
-            : "max-h-[94dvh] gap-0 rounded-t-[24px] border-line bg-ivory p-0"
+            ? "w-full gap-0 overflow-hidden border-line bg-ivory p-0 sm:max-w-[460px]"
+            : "max-h-[92dvh] w-full max-w-full gap-0 overflow-hidden rounded-t-[24px] border-line bg-ivory p-0"
         }
       >
         <SheetHeader className="border-b border-line px-5 pt-5 pb-4">

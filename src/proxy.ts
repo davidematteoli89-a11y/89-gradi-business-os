@@ -6,8 +6,11 @@ import { NextResponse, type NextRequest } from "next/server";
  * È un controllo ottimistico: l'autorizzazione vera è nella RLS e nel DAL.
  */
 export async function proxy(request: NextRequest) {
-  if (process.env.DEMO_DATA === "1" || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    return NextResponse.next();
+  if (process.env.DEMO_DATA === "1") return NextResponse.next();
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    // nessun database e nessuna demo: niente da mostrare, solo le istruzioni
+    if (request.nextUrl.pathname === "/configura") return NextResponse.next();
+    return NextResponse.redirect(new URL("/configura", request.url));
   }
 
   let response = NextResponse.next({ request });

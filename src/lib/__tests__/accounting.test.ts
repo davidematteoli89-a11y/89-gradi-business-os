@@ -151,3 +151,23 @@ describe("report mensile", () => {
     expect(csv).toBe('﻿Descrizione;Importo\r\n"Farina; tipo 00";-12,50');
   });
 });
+
+describe("cassa aziendale", () => {
+  it("le spese pagate dai soci non escono dalla cassa; conferimenti e rimborsi sì", () => {
+    const docs = [doc({ id: "s", direction: "out", netCents: 10000, vatBp: 0, documentDate: "2026-03-01" })];
+    const pays = [pay({ id: "p", documentId: "s", amountCents: 10000, paidOn: "2026-03-01", payer: "socio", partnerId: "A" })];
+    const rows = monthlyReport({
+      from: "2026-03-01",
+      to: "2026-03-31",
+      documents: docs,
+      payments: pays,
+      movements: [
+        { id: "m1", partnerId: "A", type: "conferimento", amountCents: 50000, occurredOn: "2026-03-02", description: "" },
+        { id: "m2", partnerId: "A", type: "rimborso", amountCents: 10000, occurredOn: "2026-03-10", description: "" },
+        { id: "m3", partnerId: "A", counterpartPartnerId: "B", type: "compensazione", amountCents: 999, occurredOn: "2026-03-11", description: "" },
+      ],
+      vatMode: "ordinario",
+    });
+    expect(rows[0]).toMatchObject({ costCents: 10000, cashInCents: 50000, cashOutCents: 10000 });
+  });
+});

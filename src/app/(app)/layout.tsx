@@ -1,12 +1,15 @@
+import { connection } from "next/server";
 import { AppShell } from "@/components/app/app-shell";
-import { Unconfigured } from "@/components/app/unconfigured";
+import { redirect } from "next/navigation";
 import { dataMode, getDataset } from "@/lib/data/source";
 import { documentsWithBalance, lookup, searchIndex } from "@/lib/data/queries";
 
 const ROLE_LABEL = { admin: "Amministratore", editor: "Può modificare", viewer: "Sola lettura" } as const;
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  if (dataMode() === "unconfigured") return <Unconfigured />;
+  // area privata: sempre renderizzata alla richiesta, mai prerenderizzata al build
+  await connection();
+  if (dataMode() === "unconfigured") redirect("/configura");
   const ds = await getDataset();
   const L = lookup(ds);
 

@@ -1,36 +1,17 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 89 Gradi Business OS
 
-## Getting Started
+Gestionale privato di 89 Gradi — pizza catering mobile e cocktail bar.
+Next.js 16 · TypeScript · Tailwind v4 · shadcn/ui · Supabase · React Hook Form + Zod.
 
-First, run the development server:
+- Setup e variabili d'ambiente: [`docs/07-setup.md`](docs/07-setup.md)
+- PRD: [`docs/01-prd.md`](docs/01-prd.md) · Architettura: [`docs/02-architettura.md`](docs/02-architettura.md)
+- Schema dati e modello contabile: [`docs/03-schema-database.md`](docs/03-schema-database.md)
+- Design system: [`docs/04-design-system.md`](docs/04-design-system.md)
+- Piano e stato: [`docs/05-piano-incrementale.md`](docs/05-piano-incrementale.md)
+- Decisioni da confermare: [`docs/06-decisioni-da-confermare.md`](docs/06-decisioni-da-confermare.md)
 
 ```bash
+npm install
+echo "DEMO_DATA=1" > .env.local   # prototipo con dati dimostrativi
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

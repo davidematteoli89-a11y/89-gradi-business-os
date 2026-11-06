@@ -18,6 +18,11 @@ export function formatDate(iso: ISODate, style: keyof typeof fmt = "short") {
   return fmt[style].format(asDate(iso)).replace(".", "");
 }
 
+/** "5 nov", oppure "5 nov 2025" se l'anno è diverso da quello di riferimento */
+export function formatDateSmart(iso: ISODate, today: ISODate) {
+  return iso.slice(0, 4) === today.slice(0, 4) ? formatDate(iso) : `${formatDate(iso)} ${iso.slice(0, 4)}`;
+}
+
 export function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }

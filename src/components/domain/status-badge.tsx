@@ -75,7 +75,8 @@ export function EventStatusBadge({ status, className }: { status: EventStatus; c
 }
 
 export function PaymentStateBadge({ state, direction, className }: { state: PaymentState; direction?: "in" | "out"; className?: string }) {
-  let [label, tone] = PAYMENT[state];
+  const tone = PAYMENT[state][1];
+  let label = PAYMENT[state][0];
   if (direction === "in") {
     if (state === "da_pagare") label = "Da incassare";
     if (state === "pagato") label = "Incassato";
