@@ -1,26 +1,142 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+/* 89 Gradi — Warm Minimal */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #f7f3ee;
+  --ivory: #fcfaf6;
+  --ink: #24211f;
+  --ash: #6b645e;
+  --line: #e6ded4;
+  --brand: #b42332;
+  --olive: #4f6b45;
+  --amber: #a0611a;
+  --sand: #efe8df;
+
+  --radius: 0.75rem;
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--ivory);
+  --card-foreground: var(--ink);
+  --popover: var(--ivory);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: #fffaf5;
+  --secondary: var(--sand);
+  --secondary-foreground: var(--ink);
+  --muted: var(--sand);
+  --muted-foreground: var(--ash);
+  --accent: #f1ebe3;
+  --accent-foreground: var(--ink);
+  --destructive: var(--brand);
+  --border: var(--line);
+  --input: #ddd3c7;
+  --ring: #b4233266;
+
+  --chart-1: #24211f;
+  --chart-2: #b42332;
+  --chart-3: #a59a8e;
+  --chart-4: #4f6b45;
+  --chart-5: #a0611a;
+
+  --sidebar: var(--ivory);
+
+  --shadow-panel: 0 1px 2px rgb(36 33 31 / 0.04), 0 10px 28px -14px rgb(36 33 31 / 0.14);
+  --shadow-float: 0 2px 6px rgb(36 33 31 / 0.06), 0 22px 48px -18px rgb(36 33 31 / 0.28);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-paper: var(--paper);
+  --color-ivory: var(--ivory);
+  --color-ink: var(--ink);
+  --color-ash: var(--ash);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-olive: var(--olive);
+  --color-amber: var(--amber);
+  --color-sand: var(--sand);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --shadow-panel: var(--shadow-panel);
+  --shadow-float: var(--shadow-float);
+
+  --font-sans: var(--font-instrument), ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: #b4233226;
+  }
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@utility panel {
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 8px);
+  box-shadow: var(--shadow-panel);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

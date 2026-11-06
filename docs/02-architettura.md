@@ -1,7 +1,7 @@
 # Architettura
 
 ## Stack
-- **Next.js 16** (App Router, Server Components, Server Actions, `cacheComponents` attivo) + **TypeScript** strict.
+- **Next.js 16** (App Router, Server Components, Server Actions; `cacheComponents` disattivato perché ogni pagina dipende dalla sessione) + **TypeScript** strict.
 - **Tailwind CSS v4** + componenti **shadcn/ui** (new-york v4, copiati in `src/components/ui`, basati su Radix).
 - **Supabase**: PostgreSQL, Auth (email + password / magic link), Storage privato.
 - **React Hook Form + Zod** per i form; gli stessi schemi Zod validano lato server nelle Server Actions.
@@ -44,7 +44,7 @@ docs/
 ## Flusso dei dati
 1. Le pagine sono Server Components che chiamano funzioni di `lib/data` (Data Access Layer).
 2. `lib/data` sceglie la sorgente: **demo** se `DEMO_DATA=1` e non siamo in produzione, altrimenti **Supabase** con il cookie di sessione dell'utente (RLS applicata dal database).
-3. Le mutazioni passano da Server Actions: validazione Zod → controllo permesso → query con il client dell'utente → `revalidatePath`/`updateTag` → toast di conferma lato client.
+3. Le mutazioni passano da Server Actions: validazione Zod → controllo permesso → query con il client dell'utente → `revalidatePath` → toast di conferma lato client.
 4. I calcoli (IVA, margini, saldi) stanno in `lib/domain`, sono funzioni pure e testate; il database conserva i dati grezzi, le viste SQL replicano gli stessi calcoli per report ed export.
 
 ## Sicurezza
@@ -61,7 +61,7 @@ docs/
 - Il seed SQL demo è in un file separato, non eseguito dalle migrazioni.
 
 ## Rendering e prestazioni
-- Con `cacheComponents` le letture legate alla sessione stanno dentro `<Suspense>` con skeleton fedeli al layout.
+- Le pagine dati sono dinamiche (sessione); `loading.tsx` con skeleton fedeli al layout per ogni sezione.
 - Le liste lunghe sono paginate lato server; i filtri vivono nei `searchParams` (link condivisibili, tasto indietro funzionante).
 
 ## Accessibilità
