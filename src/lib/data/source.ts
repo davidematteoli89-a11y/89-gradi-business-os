@@ -23,7 +23,10 @@ export function dataMode(): DataMode {
 /** Dataset della richiesta corrente (una sola lettura per richiesta). */
 export const getDataset = cache(async (): Promise<Dataset & { mode: DataMode }> => {
   const mode = dataMode();
-  if (mode === "demo") return { ...buildDemoDataset(new Date()), mode };
+  if (mode === "demo") {
+    const romeToday = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+    return { ...buildDemoDataset(new Date(`${romeToday}T12:00:00`)), mode };
+  }
   if (mode === "supabase") return { ...(await loadSupabaseDataset()), mode };
   throw new Error("UNCONFIGURED");
 });

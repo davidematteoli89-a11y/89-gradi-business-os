@@ -147,6 +147,6 @@ export function centsToInput(cents: Cents): string {
   return cents < 0 ? `-${s}` : s;
 }
 
-export function formatPercentBp(bp: BasisPoints): string {
-  return `${(bp / 100).toLocaleString("it-IT", { maximumFractionDigits: 2 })}%`;
+export function formatPercentBp(bp: BasisPoints, digits = 1): string {
+  return `${(bp / 100).toLocaleString("it-IT", { maximumFractionDigits: digits })}%`;
 }

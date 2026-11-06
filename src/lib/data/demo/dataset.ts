@@ -49,7 +49,7 @@ export function buildDemoDataset(today: Date) {
     { partnerId: "pa", shareBp: 5500, validFrom: d(-400) },
     { partnerId: "pb", shareBp: 4500, validFrom: d(-400) },
   ];
-  const vatMode: VatMode = "da_definire";
+  const vatMode = "da_definire" as VatMode;
 
   const categories: Category[] = [
     { id: "cat-ricavi-eventi", name: "Ricavi eventi", direction: "in", nature: "evento" },
@@ -229,7 +229,7 @@ export function buildDemoDataset(today: Date) {
     pay("Battesimo Conti — pizza", d(-10), byDesc("Battesimo Conti — pizza").totalCents - 60000, "bonifico"),
     pay("Matrimonio Bianchi–Ferri — pizza", d(-38), 83160, "bonifico"),
     pay("Matrimonio Bianchi–Ferri — cocktail", d(-38), 91134, "bonifico"),
-    pay("40 anni di Marco", d(-14), 50000, "bonifico"),
+    pay("40 anni di Marco", d(-4), 50000, "bonifico"),
     // Uscite
     pay("Farine e semola", d(-22), "all", "bonifico"),
     pay("Fiordilatte e burrata", d(-49), "all", "carta", "pa"),
@@ -340,6 +340,7 @@ export function buildDemoDataset(today: Date) {
 
   return {
     today: d(0),
+    currentUser: { name: "Socio A", partnerId: "pa" as string | undefined, role: "admin" as "admin" | "editor" | "viewer" },
     partners,
     shares,
     vatMode,
