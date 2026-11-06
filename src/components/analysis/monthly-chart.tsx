@@ -22,7 +22,7 @@ export function MonthlyChart({ data }: { data: MonthlyPoint[] }) {
           tickLine={false}
           axisLine={false}
           width={56}
-          tickFormatter={(v: number) => (v >= 100000 ? `${Math.round(v / 100000)}k €` : `${Math.round(v / 100)} €`)}
+          tickFormatter={(v: number) => (v >= 100000 ? `${(v / 100000).toLocaleString("it-IT", { maximumFractionDigits: 1 })}k €` : `${Math.round(v / 100)} €`)}
         />
         <ChartTooltip
           cursor={{ fill: "var(--sand)", opacity: 0.6 }}
