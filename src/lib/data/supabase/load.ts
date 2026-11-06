@@ -37,14 +37,15 @@ export async function loadSupabaseDataset(): Promise<Dataset> {
 
   const [
     settings, partners, shares, categories, contacts, events, quotes, quoteLines, budget, documents, payments,
-    movements, tasks, staff, resources, eventResources, campaigns, marketing, attachments, audit, appUsers,
+    movements, tasks, staff, resources, eventResources, campaigns, marketing, attachments, audit, appUsers, templates,
   ] = await Promise.all([
-    q("settings"), q("partners"), q("partner_shares"), q("categories"), q("contacts"), q("events"),
-    q("event_quotes"), q("event_quote_lines"), q("event_budget_lines"), q("fin_documents"), q("fin_payments"),
-    q("partner_movements"), q("event_tasks"), q("event_staff"), q("resources"), q("event_resources"),
-    q("campaigns"), q("marketing_tasks"), q("attachments", "entity, entity_id, version"),
-    sb.from("audit_log").select("*").order("at", { ascending: false }).limit(20).then((r) => (r.data ?? []) as any[]),
-    q("app_users"),
+    q("g89_settings"), q("g89_partners"), q("g89_partner_shares"), q("g89_categories"), q("g89_contacts"), q("g89_events"),
+    q("g89_event_quotes"), q("g89_event_quote_lines"), q("g89_event_budget_lines"), q("g89_fin_documents"), q("g89_fin_payments"),
+    q("g89_partner_movements"), q("g89_event_tasks"), q("g89_event_staff"), q("g89_resources"), q("g89_event_resources"),
+    q("g89_campaigns"), q("g89_marketing_tasks"), q("g89_attachments", "entity, entity_id, version"),
+    sb.from("g89_audit_log").select("*").order("at", { ascending: false }).limit(20).then((r) => (r.data ?? []) as any[]),
+    q("g89_app_users"),
+    q("g89_checklist_templates"),
   ]);
 
   const attachCount = new Map<string, { n: number; v: number }>();
@@ -59,13 +60,13 @@ export async function loadSupabaseDataset(): Promise<Dataset> {
 
   const ACTION: Record<string, ActivityEntry["action"]> = { insert: "creato", update: "modificato", delete: "eliminato" };
   const ENTITY: Record<string, [string, string]> = {
-    fin_documents: ["Documento", "/finanze"],
-    fin_payments: ["Pagamento", "/finanze"],
-    events: ["Evento", "/eventi"],
-    event_quotes: ["Preventivo", "/eventi"],
-    marketing_tasks: ["Marketing", "/marketing"],
-    partner_movements: ["Movimento socio", "/finanze/soci"],
-    attachments: ["File", "/finanze"],
+    g89_fin_documents: ["Documento", "/finanze"],
+    g89_fin_payments: ["Pagamento", "/finanze"],
+    g89_events: ["Evento", "/eventi"],
+    g89_event_quotes: ["Preventivo", "/eventi"],
+    g89_marketing_tasks: ["Marketing", "/marketing"],
+    g89_partner_movements: ["Movimento socio", "/finanze/soci"],
+    g89_attachments: ["File", "/finanze"],
   };
 
   const me = appUsers.find((u) => u.user_id === claims.claims.sub);
@@ -74,6 +75,7 @@ export async function loadSupabaseDataset(): Promise<Dataset> {
   return {
     today: new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }),
     currentUser: { name: me.display_name as string, partnerId: (me.partner_id ?? undefined) as string | undefined, role: me.role as "admin" | "editor" | "viewer" },
+    checklistTemplates: templates.map((t) => ({ id: t.id as string, name: t.name as string })),
     vatMode: (settings[0]?.vat_mode ?? "da_definire") as VatMode,
     partners: partners.map((p) => ({ id: p.id, name: p.name, shortName: p.short_name, color: p.color })),
     shares: shares.map((s) => ({ partnerId: s.partner_id, shareBp: s.share_bp, validFrom: s.valid_from })),
@@ -131,7 +133,7 @@ export async function loadSupabaseDataset(): Promise<Dataset> {
           id: String(a.id),
           at: a.at,
           actorPartnerId: userPartner.get(a.actor) ?? "",
-          action: a.table_name === "fin_payments" && a.action === "insert" ? "pagato" : (ACTION[a.action] ?? "modificato"),
+          action: a.table_name === "g89_fin_payments" && a.action === "insert" ? "pagato" : (ACTION[a.action] ?? "modificato"),
           entity,
           summary: row.description ?? row.title ?? row.file_name ?? row.code ?? "",
           href,

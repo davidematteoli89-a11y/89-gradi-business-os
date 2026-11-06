@@ -31,13 +31,13 @@ export async function createEvent(input: unknown): Promise<ActionResult> {
 
   const sb = await createSupabaseServerClient();
   const { data: client, error: ce } = await sb
-    .from("contacts")
+    .from("g89_contacts")
     .insert({ kind: "cliente", name: v.clientName, phone: v.clientPhone || null, email: v.clientEmail || null })
     .select("id")
     .single();
   if (ce) return { ok: false, message: `Cliente non salvato: ${ce.message}` };
   const { data: ev, error } = await sb
-    .from("events")
+    .from("g89_events")
     .insert({
       code,
       title: v.title,
@@ -59,9 +59,9 @@ export async function createEvent(input: unknown): Promise<ActionResult> {
   if (error) return { ok: false, message: `Evento non salvato: ${error.message}` };
 
   if (v.checklistTemplate) {
-    const { data: items } = await sb.from("checklist_template_items").select("*").eq("template_id", v.checklistTemplate);
+    const { data: items } = await sb.from("g89_checklist_template_items").select("*").eq("template_id", v.checklistTemplate);
     if (items?.length) {
-      await sb.from("event_tasks").insert(
+      await sb.from("g89_event_tasks").insert(
         items.map((it) => {
           const d = new Date(`${v.date}T00:00:00Z`);
           d.setUTCDate(d.getUTCDate() - it.days_before);
@@ -86,7 +86,7 @@ export async function updateEventStatus(input: unknown): Promise<ActionResult> {
   if (denied) return denied;
   if (dataMode() === "demo") return { ok: true, message: `Stato aggiornato. ${DEMO}` };
   const sb = await createSupabaseServerClient();
-  const { error } = await sb.from("events").update({ status: parsed.data.status }).eq("id", parsed.data.eventId);
+  const { error } = await sb.from("g89_events").update({ status: parsed.data.status }).eq("id", parsed.data.eventId);
   if (error) return { ok: false, message: `Stato non aggiornato: ${error.message}` };
   revalidatePath("/", "layout");
   return { ok: true, message: "Stato aggiornato" };
@@ -108,7 +108,7 @@ export async function duplicateEvent(eventId: string): Promise<ActionResult> {
 
   const sb = await createSupabaseServerClient();
   const { data: ev, error } = await sb
-    .from("events")
+    .from("g89_events")
     .insert({
       code,
       title: `${src.title} (copia)`,
@@ -130,17 +130,17 @@ export async function duplicateEvent(eventId: string): Promise<ActionResult> {
 
   const quote = ds.quotes.filter((q) => q.eventId === src.id).sort((a, b) => b.version - a.version)[0];
   if (quote) {
-    const { data: nq } = await sb.from("event_quotes").insert({ event_id: ev.id, version: 1, status: "bozza" }).select("id").single();
+    const { data: nq } = await sb.from("g89_event_quotes").insert({ event_id: ev.id, version: 1, status: "bozza" }).select("id").single();
     if (nq)
-      await sb.from("event_quote_lines").insert(
+      await sb.from("g89_event_quote_lines").insert(
         quote.lines.map((l, i) => ({ quote_id: nq.id, service: l.service, description: l.description, qty: l.qty, unit_price_cents: l.unitPriceCents, vat_bp: l.vatBp, position: i })),
       );
   }
   const budget = ds.budget.filter((b) => b.eventId === src.id);
   if (budget.length)
-    await sb.from("event_budget_lines").insert(budget.map((b) => ({ event_id: ev.id, service: b.service, description: b.description, amount_cents: b.amountCents, kind: b.kind })));
+    await sb.from("g89_event_budget_lines").insert(budget.map((b) => ({ event_id: ev.id, service: b.service, description: b.description, amount_cents: b.amountCents, kind: b.kind })));
   const tasks = ds.tasks.filter((t) => t.eventId === src.id);
-  if (tasks.length) await sb.from("event_tasks").insert(tasks.map((t, i) => ({ event_id: ev.id, label: t.label, phase: t.phase, position: i })));
+  if (tasks.length) await sb.from("g89_event_tasks").insert(tasks.map((t, i) => ({ event_id: ev.id, label: t.label, phase: t.phase, position: i })));
 
   revalidatePath("/", "layout");
   return { ok: true, id: ev.id, message: `Evento duplicato come ${code}` };
@@ -151,7 +151,7 @@ export async function toggleTask(input: { taskId: string; done: boolean }): Prom
   if (denied) return denied;
   if (dataMode() === "demo") return { ok: true, message: input.done ? "Fatto" : "Riaperta" };
   const sb = await createSupabaseServerClient();
-  const { error } = await sb.from("event_tasks").update({ done_at: input.done ? new Date().toISOString() : null }).eq("id", input.taskId);
+  const { error } = await sb.from("g89_event_tasks").update({ done_at: input.done ? new Date().toISOString() : null }).eq("id", input.taskId);
   if (error) return { ok: false, message: `Non aggiornata: ${error.message}` };
   revalidatePath("/", "layout");
   return { ok: true, message: input.done ? "Fatto" : "Riaperta" };
@@ -163,7 +163,7 @@ export async function toggleResourceCheck(input: { id: string; field: "loaded" |
   if (dataMode() === "demo") return { ok: true, message: "Aggiornato" };
   const sb = await createSupabaseServerClient();
   const col = input.field === "loaded" ? "loaded_at" : "returned_at";
-  const { error } = await sb.from("event_resources").update({ [col]: input.value ? new Date().toISOString() : null }).eq("id", input.id);
+  const { error } = await sb.from("g89_event_resources").update({ [col]: input.value ? new Date().toISOString() : null }).eq("id", input.id);
   if (error) return { ok: false, message: error.message };
   revalidatePath("/", "layout");
   return { ok: true, message: "Aggiornato" };

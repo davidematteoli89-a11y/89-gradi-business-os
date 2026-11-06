@@ -344,6 +344,7 @@ export function buildDemoDataset(today: Date) {
     partners,
     shares,
     vatMode,
+    checklistTemplates: [{ id: "tpl-standard", name: "Evento pizza + cocktail" }] as { id: string; name: string }[],
     categories,
     contacts,
     events,

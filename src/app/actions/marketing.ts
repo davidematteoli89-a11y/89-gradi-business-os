@@ -19,7 +19,7 @@ export async function setMarketingStatus(input: unknown): Promise<ActionResult> 
   const label = { da_fare: "Riportata a da fare", in_corso: "In corso", in_approvazione: "Inviata in approvazione", approvato: "Approvata", pubblicato: "Segnata come pubblicata", annullato: "Annullata" }[parsed.data.status];
   if (dataMode() === "demo") return { ok: true, message: `${label}. Modalità demo: non salvato.` };
   const sb = await createSupabaseServerClient();
-  const { error } = await sb.from("marketing_tasks").update({ status: parsed.data.status }).eq("id", parsed.data.taskId);
+  const { error } = await sb.from("g89_marketing_tasks").update({ status: parsed.data.status }).eq("id", parsed.data.taskId);
   if (error) return { ok: false, message: error.message };
   revalidatePath("/marketing");
   return { ok: true, message: label };

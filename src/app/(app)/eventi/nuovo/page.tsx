@@ -16,7 +16,7 @@ export default async function NewEventPage() {
       </Link>
       <PageHeader title="Nuovo evento" description="Bastano nome, cliente e data: il resto si completa strada facendo." className="mt-2" />
       <Panel className="max-w-3xl p-5 sm:p-7">
-        <EventForm today={ds.today} templates={[{ id: "", name: "Nessuna" }, { id: "tpl-standard", name: "Evento pizza + cocktail" }]} />
+        <EventForm today={ds.today} templates={[{ id: "", name: "Nessuna" }, ...ds.checklistTemplates]} />
       </Panel>
     </>
   );

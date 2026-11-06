@@ -25,7 +25,16 @@ La **service role key non serve** e non va configurata: tutte le query passano d
 
 Senza database e senza `DEMO_DATA` l'app mostra solo la pagina `/configura`: nessun numero inventato.
 
-## Database (sviluppo)
+## Database attuale
+Il database è nel progetto Supabase **aidady-business-os** (`ffpknnpwydsyuxcaovyk`, Francoforte), condiviso con altre applicazioni.
+Per non interferire, **tutti gli oggetti di 89 Gradi hanno il prefisso `g89_`** (tabelle, tipi, funzioni, viste, policy) e il bucket file è `g89-documenti`.
+Le migrazioni non modificano nulla al di fuori di questi oggetti; un test lo verifica.
+Le impostazioni di autenticazione (registrazione pubblica, email, URL di redirect) sono condivise con le altre app: non vanno cambiate solo per 89 Gradi.
+
+Applicate il 6/11/2026: `g89_core_schema`, `g89_security`, `g89_views_and_rpc`, `g89_base_config` (12 categorie e il modello di checklist), `g89_revoke_trigger_functions`.
+Accesso amministratore concesso a davide.matteoli89@gmail.com (nessun socio associato).
+
+## Database (nuova installazione)
 1. Crea il progetto Supabase di sviluppo.
 2. Applica le migrazioni in ordine:
    ```bash
@@ -41,21 +50,21 @@ Senza database e senza `DEMO_DATA` l'app mostra solo la pagina `/configura`: nes
    Senza quella riga il seed si rifiuta di partire.
 
 ## Utenti e permessi
-1. Supabase → Authentication → Providers → Email: disattiva "Allow new users to sign up".
+1. La registrazione pubblica non serve: anche se un estraneo creasse un account, senza riga in `g89_app_users` non vede nulla (RLS).
 2. Authentication → Users → **Invite user** per ciascun socio.
 3. Collega ogni utente a un socio e a un ruolo (SQL editor):
    ```sql
-   insert into public.partners (name, short_name, color) values ('Nome socio A', 'A', '#24211F'), ('Nome socio B', 'B', '#B42332');
-   insert into public.app_users (user_id, role, partner_id, display_name)
-   select u.id, 'admin', p.id, p.name from auth.users u, public.partners p
+   insert into public.g89_partners (name, short_name, color) values ('Nome socio A', 'A', '#24211F'), ('Nome socio B', 'B', '#B42332');
+   insert into public.g89_app_users (user_id, role, partner_id, display_name)
+   select u.id, 'admin', p.id, p.name from auth.users u, public.g89_partners p
    where u.email = 'socio-a@esempio.it' and p.short_name = 'A';
    -- ripeti per il socio B
    ```
 4. Imposta le quote nella stessa transazione (devono sommare al 100%):
    ```sql
    begin;
-   insert into public.partner_shares (partner_id, share_bp, valid_from) select id, 5000, current_date from public.partners where short_name = 'A';
-   insert into public.partner_shares (partner_id, share_bp, valid_from) select id, 5000, current_date from public.partners where short_name = 'B';
+   insert into public.g89_partner_shares (partner_id, share_bp, valid_from) select id, 5000, current_date from public.g89_partners where short_name = 'A';
+   insert into public.g89_partner_shares (partner_id, share_bp, valid_from) select id, 5000, current_date from public.g89_partners where short_name = 'B';
    commit;
    ```
    I valori sopra sono un esempio: usate le vostre quote reali.

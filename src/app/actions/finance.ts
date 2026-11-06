@@ -49,7 +49,7 @@ export async function createQuickExpense(formData: FormData): Promise<ActionResu
   }
 
   const sb = await createSupabaseServerClient();
-  const { data: docId, error } = await sb.rpc("create_quick_expense", {
+  const { data: docId, error } = await sb.rpc("g89_create_quick_expense", {
     p_description: v.description,
     p_document_date: v.date,
     p_category_id: v.categoryId,
@@ -70,12 +70,12 @@ export async function createQuickExpense(formData: FormData): Promise<ActionResu
   if (receipt) {
     const ext = receipt.name.split(".").pop()?.toLowerCase() ?? "bin";
     const path = `documenti/${docId}/${crypto.randomUUID()}.${ext}`;
-    const up = await sb.storage.from("documenti").upload(path, receipt, { contentType: receipt.type, upsert: false });
+    const up = await sb.storage.from("g89-documenti").upload(path, receipt, { contentType: receipt.type, upsert: false });
     if (up.error) {
       revalidatePath("/", "layout");
       return { ok: true, id: docId, message: "Spesa salvata, ma la foto non è stata caricata. Riprova dalla scheda della spesa." };
     }
-    await sb.from("attachments").insert({ path, file_name: receipt.name, mime: receipt.type, size: receipt.size, entity: "document", entity_id: docId });
+    await sb.from("g89_attachments").insert({ path, file_name: receipt.name, mime: receipt.type, size: receipt.size, entity: "document", entity_id: docId });
   }
 
   revalidatePath("/", "layout");
@@ -87,9 +87,9 @@ export async function deleteDocument(documentId: string): Promise<ActionResult> 
   if (denied) return denied;
   if (dataMode() === "demo") return { ok: true, message: "Modalità demo: nessuna modifica salvata." };
   const sb = await createSupabaseServerClient();
-  const { count } = await sb.from("fin_payments").select("id", { count: "exact", head: true }).eq("document_id", documentId);
+  const { count } = await sb.from("g89_fin_payments").select("id", { count: "exact", head: true }).eq("document_id", documentId);
   if (count) return { ok: false, message: "Elimina prima i pagamenti collegati: così la cassa resta coerente." };
-  const { error } = await sb.from("fin_documents").delete().eq("id", documentId);
+  const { error } = await sb.from("g89_fin_documents").delete().eq("id", documentId);
   if (error) return { ok: false, message: `Eliminazione non riuscita: ${error.message}` };
   revalidatePath("/", "layout");
   return { ok: true, message: "Documento eliminato" };
@@ -112,7 +112,7 @@ export async function registerIncome(input: unknown): Promise<ActionResult> {
   if (dataMode() === "demo") return { ok: true, message: "Incasso verificato. Modalità demo: non è stato salvato." };
 
   const sb = await createSupabaseServerClient();
-  const { error } = await sb.from("fin_payments").insert({
+  const { error } = await sb.from("g89_fin_payments").insert({
     document_id: v.documentId,
     paid_on: v.date,
     amount_cents: amount,
@@ -129,7 +129,7 @@ export async function registerIncome(input: unknown): Promise<ActionResult> {
 export async function signedReceiptUrl(path: string): Promise<string | null> {
   if (dataMode() !== "supabase") return null;
   const sb = await createSupabaseServerClient();
-  const { data } = await sb.storage.from("documenti").createSignedUrl(path, 60 * 5);
+  const { data } = await sb.storage.from("g89-documenti").createSignedUrl(path, 60 * 5);
   return data?.signedUrl ?? null;
 }
 
@@ -141,7 +141,7 @@ export async function registerPartnerMovement(input: unknown): Promise<ActionRes
   const v = parsed.data;
   if (dataMode() === "demo") return { ok: true, message: "Movimento verificato. Modalità demo: non è stato salvato." };
   const sb = await createSupabaseServerClient();
-  const { error } = await sb.from("partner_movements").insert({
+  const { error } = await sb.from("g89_partner_movements").insert({
     partner_id: v.partnerId,
     counterpart_partner_id: v.type === "compensazione" ? v.counterpartPartnerId : null,
     type: v.type,

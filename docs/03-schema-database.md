@@ -2,6 +2,8 @@
 
 Tutti gli importi sono **interi in centesimi** (`bigint`). Le aliquote IVA sono in **punti base** (`2200` = 22%). Le date documento/scadenza/pagamento sono `date`; i timestamp tecnici `timestamptz`.
 
+> Nel database tutti i nomi hanno il prefisso `g89_` (es. `g89_fin_documents`): il progetto Supabase è condiviso con altre applicazioni. Qui sotto i nomi sono riportati senza prefisso per leggibilità.
+
 ## Modello contabile (il punto più importante)
 
 ```

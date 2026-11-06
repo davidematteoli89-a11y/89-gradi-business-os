@@ -27,7 +27,7 @@ export function EventForm({ today, templates }: { today: string; templates: { id
     resolver: zodResolver(eventSchema),
     defaultValues: {
       title: "", clientName: "", clientPhone: "", clientEmail: "", status: "richiesta", date: today, startTime: "", endTime: "",
-      venueName: "", venueAddress: "", guests: 50, hasPizza: true, hasCocktail: false, leadSource: "", checklistTemplate: "tpl-standard", notes: "",
+      venueName: "", venueAddress: "", guests: 50, hasPizza: true, hasCocktail: false, leadSource: "", checklistTemplate: templates[1]?.id ?? "", notes: "",
     },
   });
   const e = formState.errors;
