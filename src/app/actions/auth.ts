@@ -18,7 +18,13 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
   if (!parsed.success) return { message: parsed.error.issues[0].message, email };
   const sb = await createSupabaseServerClient();
   const { error } = await sb.auth.signInWithPassword({ email: parsed.data.email, password: parsed.data.password });
-  if (error) return { message: "Email o password non corrette.", email };
+  if (error) {
+    console.error("[login]", error.status, error.code, error.message);
+    if (error.code === "invalid_credentials") return { message: "Email o password non corrette.", email };
+    if (error.code === "email_not_confirmed") return { message: "Email non ancora confermata: apri il link ricevuto per posta.", email };
+    if (error.status === 429) return { message: "Troppi tentativi. Riprova tra qualche minuto.", email };
+    return { message: `Accesso non riuscito (${error.code ?? error.status ?? "errore di rete"}). Controlla la connessione e riprova.`, email };
+  }
   const next = parsed.data.next?.startsWith("/") && !parsed.data.next.startsWith("//") ? parsed.data.next : "/";
   redirect(next);
 }
