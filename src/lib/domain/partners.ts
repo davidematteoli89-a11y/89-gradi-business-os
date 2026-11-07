@@ -35,10 +35,16 @@ export const MOVEMENT_LABELS: Record<LedgerEntry["kind"], string> = {
   versamento: "Versamento",
   prelievo: "Prelievo / distribuzione",
   compensazione: "Compensazione tra soci",
+  apporto_non_monetario: "Apporto non monetario",
+  conversione_in_capitale: "Credito convertito in capitale",
 };
 
-const RULES: Record<Exclude<PartnerMovementType, "versamento" | "compensazione">, { account: PartnerAccount; sign: 1 | -1 }> = {
+const RULES: Record<
+  Exclude<PartnerMovementType, "versamento" | "compensazione" | "conversione_in_capitale">,
+  { account: PartnerAccount; sign: 1 | -1 }
+> = {
   conferimento: { account: "capitale", sign: 1 },
+  apporto_non_monetario: { account: "capitale", sign: 1 },
   prelievo: { account: "capitale", sign: -1 },
   prestito: { account: "finanziamento", sign: 1 },
   restituzione_prestito: { account: "finanziamento", sign: -1 },
@@ -58,6 +64,12 @@ export function movementEntries(m: PartnerMovement): LedgerEntry[] {
     return [
       { ...base, id: `${m.id}:a`, partnerId: m.partnerId, account, kind: "compensazione", amountCents: -m.amountCents },
       { ...base, id: `${m.id}:b`, partnerId: m.counterpartPartnerId, account, kind: "compensazione", amountCents: m.amountCents },
+    ];
+  }
+  if (m.type === "conversione_in_capitale") {
+    return [
+      { ...base, id: `${m.id}:fin`, partnerId: m.partnerId, account: "finanziamento", kind: m.type, amountCents: -m.amountCents },
+      { ...base, id: `${m.id}:cap`, partnerId: m.partnerId, account: "capitale", kind: m.type, amountCents: m.amountCents },
     ];
   }
   if (m.type === "versamento") {
@@ -160,4 +172,61 @@ export function suggestSettlement(balances: ReturnType<typeof partnerBalances>, 
         ? { partnerId: b.partnerId, type: "rimborso" as const, amountCents: b.financingCents, occurredOn: today, description: "Rimborso a saldo" }
         : { partnerId: b.partnerId, type: "versamento" as const, account: "finanziamento" as const, amountCents: -b.financingCents, occurredOn: today, description: "Versamento a saldo" },
     );
+}
+
+/** Composizione del capitale di un socio per tipo di apporto. */
+export type ContributionBreakdown = {
+  partnerId: string;
+  cashCents: number; // conferimenti e versamenti in conto capitale
+  nonCashCents: number; // apporti non monetari (lavoro, compensi rinunciati, beni)
+  convertedCents: number; // crediti rinunciati e portati a capitale
+  withdrawnCents: number; // prelievi / distribuzioni (positivo = uscito)
+  netCents: number;
+};
+
+export function contributionBreakdown(partnerIds: readonly string[], entries: readonly LedgerEntry[]): ContributionBreakdown[] {
+  return partnerIds.map((id) => {
+    const b: ContributionBreakdown = { partnerId: id, cashCents: 0, nonCashCents: 0, convertedCents: 0, withdrawnCents: 0, netCents: 0 };
+    for (const e of entries) {
+      if (e.partnerId !== id || e.account !== "capitale") continue;
+      if (e.kind === "apporto_non_monetario") b.nonCashCents += e.amountCents;
+      else if (e.kind === "conversione_in_capitale") b.convertedCents += e.amountCents;
+      else if (e.kind === "prelievo") b.withdrawnCents += -e.amountCents;
+      else b.cashCents += e.amountCents;
+      b.netCents += e.amountCents;
+    }
+    return b;
+  });
+}
+
+/**
+ * Equilibrio degli apporti rispetto alle quote.
+ * Per ogni socio: la quota attesa del totale e quanto dovrebbe ancora apportare
+ * perché tutti siano in proporzione alle quote senza che nessuno debba "restituire".
+ */
+export function contributionBalance(breakdown: readonly ContributionBreakdown[], shares: readonly PartnerShare[]) {
+  const total = breakdown.reduce((a, b) => a + b.netCents, 0);
+  const shareOf = (id: string) => shares.find((s) => s.partnerId === id)?.shareBp ?? 0;
+  // livello comune: il massimo rapporto apporto/quota tra i soci
+  let level = 0;
+  for (const b of breakdown) {
+    const s = shareOf(b.partnerId);
+    if (s > 0) level = Math.max(level, b.netCents / s);
+  }
+  return breakdown.map((b) => {
+    const s = shareOf(b.partnerId);
+    const expectedOfTotal = s ? Math.round((total * s) / 10000) : 0;
+    const toLevel = s ? Math.max(0, Math.round(level * s) - b.netCents) : 0;
+    return {
+      partnerId: b.partnerId,
+      shareBp: s,
+      contributedCents: b.netCents,
+      actualShareBp: total ? Math.round((b.netCents * 10000) / total) : 0,
+      expectedOfTotalCents: expectedOfTotal,
+      /** differenza rispetto alla quota attesa del totale attuale (negativo = sotto quota) */
+      deltaCents: b.netCents - expectedOfTotal,
+      /** quanto dovrebbe ancora apportare per pareggiare senza ridurre gli altri */
+      toLevelCents: toLevel,
+    };
+  });
 }

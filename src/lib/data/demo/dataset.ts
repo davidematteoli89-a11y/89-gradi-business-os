@@ -44,10 +44,10 @@ export function buildDemoDataset(today: Date) {
     { id: "pa", name: "Socio A", shortName: "A", color: "#24211F" },
     { id: "pb", name: "Socio B", shortName: "B", color: "#B42332" },
   ];
-  // Quote dimostrative volutamente non 50/50
+  // Quote dimostrative: 50/50 come indicato dai soci (configurabili)
   const shares: PartnerShare[] = [
-    { partnerId: "pa", shareBp: 5500, validFrom: d(-400) },
-    { partnerId: "pb", shareBp: 4500, validFrom: d(-400) },
+    { partnerId: "pa", shareBp: 5000, validFrom: d(-400) },
+    { partnerId: "pb", shareBp: 5000, validFrom: d(-400) },
   ];
   const vatMode = "da_definire" as VatMode;
 
@@ -258,6 +258,9 @@ export function buildDemoDataset(today: Date) {
     { id: "mv-3", partnerId: "pb", type: "prestito", amountCents: 300000, occurredOn: d(-365), description: "Prestito per avvio stagione" },
     { id: "mv-4", partnerId: "pa", type: "rimborso", amountCents: 400000, occurredOn: d(-200), description: "Rimborso parziale anticipo forno" },
     { id: "mv-5", partnerId: "pb", type: "restituzione_prestito", amountCents: 100000, occurredOn: d(-60), description: "Prima restituzione prestito" },
+    { id: "mv-6", partnerId: "pa", type: "apporto_non_monetario", amountCents: 50000, occurredOn: d(-67), description: "Compenso marketing rinunciato nell'altra attività, mese 1 (valore concordato)" },
+    { id: "mv-7", partnerId: "pa", type: "apporto_non_monetario", amountCents: 50000, occurredOn: d(-37), description: "Compenso marketing rinunciato nell'altra attività, mese 2 (valore concordato)" },
+    { id: "mv-8", partnerId: "pa", type: "apporto_non_monetario", amountCents: 50000, occurredOn: d(-7), description: "Compenso marketing rinunciato nell'altra attività, mese 3 (valore concordato)" },
   ];
 
   const tasks: EventTask[] = [

@@ -16,7 +16,10 @@ import type { Partner } from "@/lib/domain/types";
 import { partnerMovementSchema, type PartnerMovementInput } from "@/lib/validation/finance";
 
 const HELP: Record<string, string> = {
-  conferimento: "Capitale messo nell'azienda. Va sul conto capitale.",
+  conferimento: "Denaro messo nell'azienda come investimento. Va sul conto capitale.",
+  apporto_non_monetario:
+    "Lavoro, servizi o compensi a cui il socio rinuncia per l'azienda, al valore concordato tra i soci. Conta come investimento, ma non muove la cassa e non è un costo.",
+  conversione_in_capitale: "Il socio rinuncia al rimborso di soldi anticipati: il credito diventa investimento.",
   prestito: "Soldi prestati all'azienda, da restituire.",
   restituzione_prestito: "L'azienda restituisce un prestito al socio.",
   rimborso: "L'azienda rimborsa al socio spese anticipate.",
@@ -118,7 +121,14 @@ export function PartnerMovementDialog({ partners, today }: { partners: Partner[]
           </div>
           <div>
             <Label htmlFor="pm-desc">Nota</Label>
-            <Input id="pm-desc" className="mt-1.5" placeholder="Es. Rimborso spese ottobre" {...register("description")} />
+            <Input
+              id="pm-desc"
+              className="mt-1.5"
+              placeholder={type === "apporto_non_monetario" ? "Es. Compenso marketing rinunciato, ottobre" : "Es. Rimborso spese ottobre"}
+              aria-invalid={!!err.description}
+              {...register("description")}
+            />
+            {err.description ? <p className="mt-1 text-[13px] text-brand">{err.description.message}</p> : null}
           </div>
           <DialogFooter>
             <Button type="submit" disabled={pending} className="w-full sm:w-auto">

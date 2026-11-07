@@ -1,7 +1,7 @@
 import { sumCents } from "@/lib/money";
 import { documentBalance, type DocumentBalance } from "@/lib/domain/documents";
 import { ACTIVE_EVENT, OPEN_PIPELINE, eventEconomics, quoteTotals, forecastQuote } from "@/lib/domain/events";
-import { buildLedger, partnerBalances, partnerStatement, sharesAt } from "@/lib/domain/partners";
+import { buildLedger, contributionBalance, contributionBreakdown, partnerBalances, partnerStatement, sharesAt } from "@/lib/domain/partners";
 import { monthlyReport, totals } from "@/lib/domain/reports";
 import type { EventRecord, EventStatus, FinDocument, ISODate } from "@/lib/domain/types";
 import type { Dataset } from "./demo/dataset";
@@ -261,8 +261,15 @@ export function partnersOverview(ds: DS) {
     ds.partners.map((p) => p.id),
     entries,
   );
+  const shares = sharesAt(ds.shares, ds.today);
+  const breakdown = contributionBreakdown(
+    ds.partners.map((p) => p.id),
+    entries,
+  );
   return {
-    shares: sharesAt(ds.shares, ds.today),
+    shares,
+    breakdown,
+    equilibrium: shares ? contributionBalance(breakdown, shares) : null,
     partners: ds.partners.map((p) => ({
       partner: p,
       balance: balances.find((b) => b.partnerId === p.id)!,

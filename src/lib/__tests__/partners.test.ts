@@ -111,3 +111,46 @@ describe("quote di ripartizione", () => {
     expect(parts.reduce((a, p) => a + p.amountCents, 0)).toBe(100001);
   });
 });
+
+describe("apporti non monetari ed equilibrio 50/50", () => {
+  // Socio A rinuncia a compensi nell'altra attività; Socio B mette denaro
+  const movements: PartnerMovement[] = [
+    { id: "b1", partnerId: "B", type: "conferimento", amountCents: 600000, occurredOn: "2026-01-10", description: "Denaro" },
+    { id: "a1", partnerId: "A", type: "conferimento", amountCents: 200000, occurredOn: "2026-01-10", description: "Denaro" },
+    { id: "a2", partnerId: "A", type: "apporto_non_monetario", amountCents: 150000, occurredOn: "2026-02-28", description: "Compenso marketing rinunciato, febbraio" },
+    { id: "a3", partnerId: "A", type: "apporto_non_monetario", amountCents: 150000, occurredOn: "2026-03-31", description: "Compenso marketing rinunciato, marzo" },
+  ];
+  const fifty = [
+    { partnerId: "A", shareBp: 5000, validFrom: "2026-01-01" },
+    { partnerId: "B", shareBp: 5000, validFrom: "2026-01-01" },
+  ];
+
+  it("l'apporto non monetario va a capitale e non tocca la cassa né il conto finanziamento", async () => {
+    const { movementCashFlow } = await import("@/lib/domain/reports");
+    const e = movementEntries(movements[2]);
+    expect(e).toEqual([expect.objectContaining({ account: "capitale", amountCents: 150000, kind: "apporto_non_monetario" })]);
+    expect(movementCashFlow(movements[2])).toBe(0);
+  });
+
+  it("separa denaro e apporti non monetari", async () => {
+    const { contributionBreakdown } = await import("@/lib/domain/partners");
+    const [a, b] = contributionBreakdown(["A", "B"], buildLedger([], [], movements));
+    expect(a).toMatchObject({ cashCents: 200000, nonCashCents: 300000, netCents: 500000 });
+    expect(b).toMatchObject({ cashCents: 600000, nonCashCents: 0, netCents: 600000 });
+  });
+
+  it("dice quanto manca a ciascuno per essere in pari con le quote", async () => {
+    const { contributionBalance, contributionBreakdown } = await import("@/lib/domain/partners");
+    const eq = contributionBalance(contributionBreakdown(["A", "B"], buildLedger([], [], movements)), fifty);
+    expect(eq.find((x) => x.partnerId === "A")).toMatchObject({ toLevelCents: 100000, deltaCents: -50000, actualShareBp: 4545 });
+    expect(eq.find((x) => x.partnerId === "B")).toMatchObject({ toLevelCents: 0, deltaCents: 50000 });
+  });
+
+  it("un credito rinunciato passa dal finanziamento al capitale", () => {
+    const e = movementEntries({ id: "c", partnerId: "A", type: "conversione_in_capitale", amountCents: 5000, occurredOn: "2026-04-01", description: "" });
+    expect(e.map((x) => [x.account, x.amountCents])).toEqual([
+      ["finanziamento", -5000],
+      ["capitale", 5000],
+    ]);
+  });
+});

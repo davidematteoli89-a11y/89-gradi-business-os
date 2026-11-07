@@ -9,7 +9,7 @@ import { getDataset } from "@/lib/data/source";
 import { partnersOverview } from "@/lib/data/queries";
 import { MOVEMENT_LABELS, suggestSettlement } from "@/lib/domain/partners";
 import { capitalize, formatDate } from "@/lib/format";
-import { formatPercentBp } from "@/lib/money";
+import { formatEuro, formatPercentBp } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Conti soci" };
@@ -56,11 +56,11 @@ export default async function SociPage({ searchParams }: { searchParams: Promise
                 </dd>
               </div>
               <div>
-                <dt className="text-[13px] text-muted-foreground">Capitale conferito</dt>
+                <dt className="text-[13px] text-muted-foreground">Investito (capitale)</dt>
                 <dd className="mt-1 text-[28px] leading-9 font-semibold tracking-[-0.02em]">
                   <Money cents={balance.capitalCents} />
                 </dd>
-                <dd className="mt-1 text-[13px] text-muted-foreground">Non rimborsabile automaticamente</dd>
+                <dd className="mt-1 text-[13px] text-muted-foreground">Denaro e apporti non monetari</dd>
               </div>
             </dl>
             <p className="mt-5 border-t border-line pt-4 text-sm text-muted-foreground">
@@ -69,6 +69,88 @@ export default async function SociPage({ searchParams }: { searchParams: Promise
           </Panel>
         ))}
       </div>
+
+      <Panel className="mt-5">
+        <PanelHeader
+          title="Equilibrio degli investimenti"
+          description="Quanto ha messo ciascun socio rispetto alla sua quota: denaro, apporti non monetari e crediti rinunciati."
+          action={<AmountKind kind="effettivo" />}
+        />
+        {o.equilibrium && o.breakdown.some((b) => b.netCents !== 0) ? (
+          <div className="p-5 sm:px-6">
+            {(() => {
+              const max = Math.max(...o.breakdown.map((b) => b.cashCents + b.nonCashCents + b.convertedCents), 1);
+              return (
+                <ul className="space-y-5">
+                  {o.breakdown.map((b) => {
+                    const p = ds.partners.find((x) => x.id === b.partnerId)!;
+                    const eq = o.equilibrium!.find((e) => e.partnerId === b.partnerId)!;
+                    const seg = [
+                      { label: "Denaro", v: b.cashCents, cls: "bg-ink" },
+                      { label: "Apporti non monetari", v: b.nonCashCents, cls: "bg-brand" },
+                      { label: "Crediti rinunciati", v: b.convertedCents, cls: "bg-ash/60" },
+                    ];
+                    return (
+                      <li key={b.partnerId}>
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <span className="inline-flex items-center gap-2 text-[15px] font-medium">
+                            <PartnerAvatar partner={p} className="size-5 text-[9px]" /> {p.name}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            <Money cents={b.netCents} className="font-medium text-ink" /> · {formatPercentBp(eq.actualShareBp, 0)} del totale, quota{" "}
+                            {formatPercentBp(eq.shareBp, 0)}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex h-2.5 gap-[2px] overflow-hidden rounded-full bg-sand" role="img" aria-label={seg.map((x) => `${x.label} ${formatEuro(x.v)}`).join(", ")}>
+                          {seg.filter((x) => x.v > 0).map((x) => (
+                            <span key={x.label} className={x.cls} style={{ width: `${(x.v / max) * 100}%` }} />
+                          ))}
+                        </div>
+                        <p className="mt-1.5 flex flex-wrap gap-x-4 text-[13px] text-muted-foreground">
+                          {seg.map((x) => (
+                            <span key={x.label}>
+                              {x.label} <Money cents={x.v} round />
+                            </span>
+                          ))}
+                          {b.withdrawnCents ? <span>Prelievi −<Money cents={b.withdrawnCents} round /></span> : null}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
+            <div className="mt-6 rounded-[14px] bg-paper p-4 text-[15px]">
+              {o.equilibrium.every((e) => e.toLevelCents === 0) ? (
+                <p>I soci sono in pari rispetto alle quote.</p>
+              ) : (
+                o.equilibrium
+                  .filter((e) => e.toLevelCents > 0)
+                  .map((e) => (
+                    <p key={e.partnerId}>
+                      Per pareggiare, <span className="font-medium">{ds.partners.find((x) => x.id === e.partnerId)?.name}</span> dovrebbe apportare
+                      ancora <Money cents={e.toLevelCents} className="font-semibold" />, in denaro o con apporti non monetari.
+                    </p>
+                  ))
+              )}
+            </div>
+            <div className="mt-3 flex items-center gap-4 text-[12px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ink" /> Denaro</span>
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-brand" /> Apporti non monetari</span>
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ash/60" /> Crediti rinunciati</span>
+            </div>
+          </div>
+        ) : (
+          <EmptyState
+            title={o.shares ? "Nessun investimento registrato" : "Quote dei soci non impostate"}
+            description={
+              o.shares
+                ? "Registra conferimenti in denaro, apporti non monetari o crediti convertiti con “Movimento socio”."
+                : "Imposta le quote in Impostazioni per vedere chi è in pari."
+            }
+          />
+        )}
+      </Panel>
 
       <Panel className="mt-5">
         <PanelHeader

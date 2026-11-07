@@ -158,7 +158,11 @@ export type PartnerMovementType =
   | "rimborso"
   | "versamento"
   | "prelievo"
-  | "compensazione";
+  | "compensazione"
+  /** lavoro, servizi o compensi a cui il socio rinuncia, valorizzati d'accordo tra i soci: capitale, senza cassa */
+  | "apporto_non_monetario"
+  /** il socio rinuncia al rimborso di un credito: passa dal conto finanziamento al capitale */
+  | "conversione_in_capitale";
 
 export type PartnerAccount = "finanziamento" | "capitale";
 

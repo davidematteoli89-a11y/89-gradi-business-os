@@ -88,6 +88,9 @@ export function movementCashFlow(m: Pick<PartnerMovement, "type" | "amountCents"
       return -m.amountCents;
     case "compensazione":
       return 0; // avviene tra i soci, fuori dalla cassa aziendale
+    case "apporto_non_monetario":
+    case "conversione_in_capitale":
+      return 0; // nessun denaro entra o esce
   }
 }
 

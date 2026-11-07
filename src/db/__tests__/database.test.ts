@@ -233,6 +233,25 @@ describe("vincoli contabili", () => {
     ]);
   });
 
+  it("apporto non monetario e credito convertito vanno a capitale, senza toccare la cassa", async () => {
+    await db.query(`insert into public.g89_partner_movements (partner_id, type, amount_cents, occurred_on, description)
+      values ('10000000-0000-0000-0000-00000000000a', 'apporto_non_monetario', 150000, '2026-06-30', 'Compenso marketing rinunciato, giugno'),
+             ('10000000-0000-0000-0000-00000000000a', 'conversione_in_capitale', 2000, '2026-07-01', 'Rinuncia al rimborso')`);
+    const r = await db.query<{ account: string; amount_cents: number }>(
+      `select account::text, sum(amount_cents)::int as amount_cents from public.g89_v_partner_ledger
+       where partner_id = '10000000-0000-0000-0000-00000000000a' and kind in ('apporto_non_monetario', 'conversione_in_capitale')
+       group by account order by account`,
+    );
+    expect(r.rows).toEqual([
+      { account: "capitale", amount_cents: 152000 },
+      { account: "finanziamento", amount_cents: -2000 },
+    ]);
+    await expect(
+      db.query(`insert into public.g89_partner_movements (partner_id, type, amount_cents, occurred_on, description)
+        values ('10000000-0000-0000-0000-00000000000a', 'apporto_non_monetario', 100, '2026-06-30', '')`),
+    ).rejects.toThrow(/non_cash_description/);
+  });
+
   it("l'audit log registra autore e modifiche", async () => {
     const r = await db.query<{ n: number }>(
       `select count(*)::int as n from public.g89_audit_log where table_name = 'g89_fin_documents' and actor = $1`,

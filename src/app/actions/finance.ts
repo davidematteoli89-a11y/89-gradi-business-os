@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseEuro } from "@/lib/money";
+import { formatEuro, parseEuro } from "@/lib/money";
+import { buildLedger, partnerBalances } from "@/lib/domain/partners";
 import { dataMode, getDataset } from "@/lib/data/source";
 import { validateNewPayment } from "@/lib/domain/documents";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -139,6 +140,17 @@ export async function registerPartnerMovement(input: unknown): Promise<ActionRes
   const denied = await assertCanEdit();
   if (denied) return denied;
   const v = parsed.data;
+  if (v.type === "conversione_in_capitale") {
+    const ds = await getDataset();
+    const credit = partnerBalances([v.partnerId], buildLedger(ds.payments, ds.documents, ds.movements))[0].financingCents;
+    if (parseEuro(v.amount)! > credit) {
+      return {
+        ok: false,
+        message: `Si può convertire al massimo il credito attuale del socio (${formatEuro(Math.max(0, credit))}).`,
+        fieldErrors: { amount: "Supera il credito del socio" },
+      };
+    }
+  }
   if (dataMode() === "demo") return { ok: true, message: "Movimento verificato. Modalità demo: non è stato salvato." };
   const sb = await createSupabaseServerClient();
   const { error } = await sb.from("g89_partner_movements").insert({

@@ -65,13 +65,17 @@ export type ActionResult = { ok: true; message: string; id?: string } | { ok: fa
 
 export const partnerMovementSchema = z
   .object({
-    type: z.enum(["conferimento", "prestito", "restituzione_prestito", "rimborso", "versamento", "prelievo", "compensazione"]),
+    type: z.enum(["conferimento", "apporto_non_monetario", "conversione_in_capitale", "prestito", "restituzione_prestito", "rimborso", "versamento", "prelievo", "compensazione"]),
     partnerId: z.string().min(1, "Scegli il socio"),
     counterpartPartnerId: z.string().optional().or(z.literal("")),
     account: z.enum(["finanziamento", "capitale"]).optional(),
     amount: amountField,
     date: isoDate,
     description: z.string().trim().max(200).optional().or(z.literal("")),
+  })
+  .refine((v) => v.type !== "apporto_non_monetario" || (v.description ?? "").trim().length >= 5, {
+    message: "Descrivi l'apporto e come è stato valorizzato, ad esempio “Compenso marketing rinunciato, ottobre”",
+    path: ["description"],
   })
   .refine((v) => v.type !== "compensazione" || (v.counterpartPartnerId && v.counterpartPartnerId !== v.partnerId), {
     message: "Per la compensazione scegli l'altro socio",
