@@ -278,3 +278,20 @@ describe("seed dimostrativo", () => {
     await fresh.close();
   }, 60_000);
 });
+
+describe("gestione soci", () => {
+  it("solo l'admin collega un account a un socio, cercandolo per email", async () => {
+    await db.exec(`update auth.users set email = 'socio.b@esempio.it' where id = '${U.stranger}'`);
+    await expect(
+      as(U.editor, () => db.query(`select public.g89_link_user('socio.b@esempio.it', '10000000-0000-0000-0000-00000000000b', 'editor', 'Socio B')`)),
+    ).rejects.toThrow(/Permesso negato/);
+    await expect(
+      as(U.admin, () => db.query(`select public.g89_link_user('nessuno@esempio.it', '10000000-0000-0000-0000-00000000000b', 'editor', 'X')`)),
+    ).rejects.toThrow(/Nessun account/);
+    await as(U.admin, () => db.query(`select public.g89_link_user(' Socio.B@esempio.it ', '10000000-0000-0000-0000-00000000000b', 'editor', 'Socio B')`));
+    const r = await as(U.admin, () => db.query<{ email: string; role: string }>(`select email, role::text from public.g89_list_access() where email = 'socio.b@esempio.it'`));
+    expect(r.rows).toEqual([{ email: "socio.b@esempio.it", role: "editor" }]);
+    const none = await as(U.editor, () => db.query(`select * from public.g89_list_access()`));
+    expect(none.rows).toHaveLength(0);
+  });
+});

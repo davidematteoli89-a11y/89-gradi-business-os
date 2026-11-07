@@ -50,6 +50,8 @@ Accesso amministratore concesso a davide.matteoli89@gmail.com (nessun socio asso
    Senza quella riga il seed si rifiuta di partire.
 
 ## Utenti e permessi
+Dall'app: **Impostazioni → Soci e quote** (solo amministratori) per aggiungere i soci, collegare il loro account tramite email e impostare le quote. L'account deve esistere su Supabase (Authentication → Add user). I passaggi SQL qui sotto restano come alternativa.
+
 1. La registrazione pubblica non serve: anche se un estraneo creasse un account, senza riga in `g89_app_users` non vede nulla (RLS).
 2. Authentication → Users → **Invite user** per ciascun socio.
 3. Collega ogni utente a un socio e a un ruolo (SQL editor):
