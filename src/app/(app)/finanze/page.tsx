@@ -9,12 +9,13 @@ import { EmptyState, Panel } from "@/components/domain/panel";
 import { PartnerAvatar } from "@/components/domain/partner-chip";
 import { PaymentStateBadge } from "@/components/domain/status-badge";
 import { DeleteDocumentButton } from "@/components/finance/delete-document";
+import { DeletePaymentButton } from "@/components/finance/delete-payment";
 import { FinanceNav } from "@/components/finance/finance-nav";
 import { Button } from "@/components/ui/button";
 import { getDataset } from "@/lib/data/source";
 import { financeOverview, listDocuments, lookup, type FinanceFilter } from "@/lib/data/queries";
 import { capitalize, formatDate, formatDateSmart } from "@/lib/format";
-import { formatPercentBp } from "@/lib/money";
+import { formatEuro, formatPercentBp } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Finanze" };
@@ -190,6 +191,13 @@ export default async function FinanzePage({ searchParams }: { searchParams: Prom
                                   ) : null}
                                 </span>
                                 <Money cents={p.amountCents} />
+                                {ds.currentUser.role !== "viewer" ? (
+                                  <DeletePaymentButton
+                                    id={p.id}
+                                    summary={`${formatEuro(p.amountCents)} del ${formatDate(p.paidOn, "full")}`}
+                                    byPartner={p.payer === "socio" ? L.partner(p.partnerId)?.name : undefined}
+                                  />
+                                ) : null}
                               </li>
                             ))}
                           </ul>

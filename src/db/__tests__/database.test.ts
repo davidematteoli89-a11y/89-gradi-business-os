@@ -295,3 +295,17 @@ describe("gestione soci", () => {
     expect(none.rows).toHaveLength(0);
   });
 });
+
+describe("eliminazione movimenti soci", () => {
+  it("l'editor elimina un movimento socio, il viewer no; l'eliminazione resta nel registro", async () => {
+    const m = await db.query<{ id: string }>(`insert into public.g89_partner_movements (partner_id, type, amount_cents, occurred_on, description)
+      values ('10000000-0000-0000-0000-00000000000b', 'conferimento', 1234, '2026-08-01', 'Da eliminare') returning id`);
+    const id = m.rows[0].id;
+    const v = await as(U.viewer, () => db.query(`delete from public.g89_partner_movements where id = $1 returning id`, [id]));
+    expect(v.rows).toHaveLength(0);
+    const e = await as(U.editor, () => db.query(`delete from public.g89_partner_movements where id = $1 returning id`, [id]));
+    expect(e.rows).toHaveLength(1);
+    const log = await db.query<{ action: string }>(`select action from public.g89_audit_log where record_id = $1 order by id`, [id]);
+    expect(log.rows.map((r) => r.action)).toEqual(["insert", "delete"]);
+  });
+});

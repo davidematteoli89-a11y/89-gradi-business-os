@@ -5,6 +5,8 @@ import { EmptyState, Panel, PanelHeader } from "@/components/domain/panel";
 import { PartnerAvatar } from "@/components/domain/partner-chip";
 import { FinanceNav } from "@/components/finance/finance-nav";
 import { PartnerMovementDialog } from "@/components/finance/partner-movement";
+import { DeleteMovementButton } from "@/components/finance/delete-movement";
+import Link from "next/link";
 import { getDataset } from "@/lib/data/source";
 import { partnersOverview } from "@/lib/data/queries";
 import { MOVEMENT_LABELS, suggestSettlement } from "@/lib/domain/partners";
@@ -19,6 +21,7 @@ export default async function SociPage({ searchParams }: { searchParams: Promise
   const conto = sp.conto === "capitale" ? "capitale" : "finanziamento";
   const ds = await getDataset();
   const o = partnersOverview(ds);
+  const canEdit = ds.currentUser.role !== "viewer";
   const settlement = suggestSettlement(
     o.partners.map((p) => p.balance),
     ds.today,
@@ -201,7 +204,8 @@ export default async function SociPage({ searchParams }: { searchParams: Promise
                     <tr className="border-y border-line bg-paper/60 text-left text-[13px] text-muted-foreground">
                       <th className="px-5 py-2 font-normal sm:px-6">Movimento</th>
                       <th className="px-2 py-2 text-right font-normal">Importo</th>
-                      <th className="px-5 py-2 text-right font-normal sm:px-6">Saldo</th>
+                      <th className="px-2 py-2 text-right font-normal">Saldo</th>
+                      <th className="w-12 pr-3"><span className="sr-only">Azioni</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -216,8 +220,28 @@ export default async function SociPage({ searchParams }: { searchParams: Promise
                         <td className="px-2 py-2.5 text-right">
                           <Money cents={r.amountCents} sign />
                         </td>
-                        <td className="px-5 py-2.5 text-right font-medium sm:px-6">
+                        <td className="px-2 py-2.5 text-right font-medium">
                           <Money cents={r.runningCents} />
+                        </td>
+                        <td className="pr-3 text-right">
+                          {r.source.type === "movement" ? (
+                            canEdit ? (
+                              <DeleteMovementButton
+                                id={r.source.movementId}
+                                label={MOVEMENT_LABELS[r.kind]}
+                                amount={formatEuro(Math.abs(r.amountCents))}
+                                pair={r.kind === "compensazione" || r.kind === "conversione_in_capitale"}
+                              />
+                            ) : null
+                          ) : (
+                            <Link
+                              href={`/finanze?q=${encodeURIComponent(r.description)}`}
+                              title="Nasce da un pagamento: si modifica o elimina dalla spesa o dall'incasso"
+                              className="text-[12px] text-muted-foreground underline-offset-4 hover:underline"
+                            >
+                              Spesa
+                            </Link>
+                          )}
                         </td>
                       </tr>
                     ))}

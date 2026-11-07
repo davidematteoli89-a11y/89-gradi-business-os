@@ -166,3 +166,32 @@ export async function registerPartnerMovement(input: unknown): Promise<ActionRes
   revalidatePath("/", "layout");
   return { ok: true, message: "Movimento registrato" };
 }
+
+export async function deletePartnerMovement(movementId: string): Promise<ActionResult> {
+  if (!movementId || typeof movementId !== "string") return { ok: false, message: "Movimento non valido." };
+  const denied = await assertCanEdit();
+  if (denied) return denied;
+  const ds = await getDataset();
+  const m = ds.movements.find((x) => x.id === movementId);
+  if (!m) return { ok: false, message: "Movimento non trovato: forse è già stato eliminato." };
+  if (dataMode() === "demo") return { ok: true, message: "Movimento eliminato. Modalità demo: non salvato." };
+  const sb = await createSupabaseServerClient();
+  const { error, count } = await sb.from("g89_partner_movements").delete({ count: "exact" }).eq("id", movementId);
+  if (error) return { ok: false, message: `Eliminazione non riuscita: ${error.message}` };
+  if (!count) return { ok: false, message: "Non hai i permessi per eliminare questo movimento." };
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Movimento eliminato" };
+}
+
+export async function deletePayment(paymentId: string): Promise<ActionResult> {
+  if (!paymentId || typeof paymentId !== "string") return { ok: false, message: "Pagamento non valido." };
+  const denied = await assertCanEdit();
+  if (denied) return denied;
+  if (dataMode() === "demo") return { ok: true, message: "Pagamento eliminato. Modalità demo: non salvato." };
+  const sb = await createSupabaseServerClient();
+  const { error, count } = await sb.from("g89_fin_payments").delete({ count: "exact" }).eq("id", paymentId);
+  if (error) return { ok: false, message: `Eliminazione non riuscita: ${error.message}` };
+  if (!count) return { ok: false, message: "Pagamento non trovato o permessi insufficienti." };
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Pagamento eliminato: il documento torna da saldare" };
+}
