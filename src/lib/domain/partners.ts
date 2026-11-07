@@ -230,3 +230,85 @@ export function contributionBalance(breakdown: readonly ContributionBreakdown[],
     };
   });
 }
+
+/* ───────────── Equilibrio complessivo tra i soci ─────────────
+ * Tutto quello che ogni socio ha messo nell'attività (spese pagate di tasca propria,
+ * denaro investito, apporti non monetari, prestiti) meno quello che ha ricevuto indietro
+ * (rimborsi, restituzioni, prelievi, incassi trattenuti), confrontato con la sua quota.
+ */
+export type EquilibriumGroup = "spese" | "investimenti" | "apporti" | "prestiti" | "ricevuti" | "compensazioni";
+
+export const EQUILIBRIUM_LABELS: Record<EquilibriumGroup, string> = {
+  spese: "Spese pagate di tasca propria",
+  investimenti: "Denaro investito",
+  apporti: "Apporti non monetari",
+  prestiti: "Prestiti all'azienda",
+  ricevuti: "Ricevuto indietro",
+  compensazioni: "Compensazioni tra soci",
+};
+
+function groupOf(e: LedgerEntry): EquilibriumGroup | null {
+  switch (e.kind) {
+    case "anticipo_spesa":
+      return "spese";
+    case "conferimento":
+    case "versamento":
+      return "investimenti";
+    case "apporto_non_monetario":
+      return "apporti";
+    case "prestito":
+      return "prestiti";
+    case "rimborso":
+    case "restituzione_prestito":
+    case "prelievo":
+    case "incasso_trattenuto":
+      return "ricevuti";
+    case "compensazione":
+      return "compensazioni";
+    case "conversione_in_capitale":
+      return null; // sposta tra conti dello stesso socio: il totale non cambia
+  }
+}
+
+export function partnerEquilibrium(
+  partnerIds: readonly string[],
+  entries: readonly LedgerEntry[],
+  shares: readonly PartnerShare[],
+) {
+  const rows = partnerIds.map((id) => {
+    const groups: Record<EquilibriumGroup, number> = { spese: 0, investimenti: 0, apporti: 0, prestiti: 0, ricevuti: 0, compensazioni: 0 };
+    for (const e of entries) {
+      if (e.partnerId !== id) continue;
+      const g = groupOf(e);
+      if (g) groups[g] += e.amountCents;
+    }
+    const net = Object.values(groups).reduce((a, b) => a + b, 0);
+    return { partnerId: id, groups, netCents: net };
+  });
+  const total = rows.reduce((a, r) => a + r.netCents, 0);
+  const shareBps = shares.map((s) => s.shareBp);
+  const ids = shares.map((s) => s.partnerId);
+  const fair = allocateByShares(total, shareBps);
+  const withFair = rows.map((r) => {
+    const i = ids.indexOf(r.partnerId);
+    const fairCents = i >= 0 ? fair[i] : 0;
+    return { ...r, shareBp: i >= 0 ? shareBps[i] : 0, fairCents, deltaCents: r.netCents - fairCents };
+  });
+
+  // Conguagli suggeriti: chi è sotto la sua quota versa a chi è sopra (minimo numero di passaggi)
+  const creditors = withFair.filter((r) => r.deltaCents > 0).map((r) => ({ id: r.partnerId, left: r.deltaCents }));
+  const debtors = withFair.filter((r) => r.deltaCents < 0).map((r) => ({ id: r.partnerId, left: -r.deltaCents }));
+  const transfers: { fromPartnerId: string; toPartnerId: string; amountCents: number }[] = [];
+  for (const d of debtors) {
+    for (const c of creditors) {
+      if (d.left === 0) break;
+      const x = Math.min(d.left, c.left);
+      if (x > 0) {
+        transfers.push({ fromPartnerId: d.id, toPartnerId: c.id, amountCents: x });
+        d.left -= x;
+        c.left -= x;
+      }
+    }
+  }
+  return { totalCents: total, partners: withFair, transfers };
+}

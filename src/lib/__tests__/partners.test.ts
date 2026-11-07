@@ -154,3 +154,27 @@ describe("apporti non monetari ed equilibrio 50/50", () => {
     ]);
   });
 });
+
+describe("equilibrio complessivo 50/50", () => {
+  it("somma spese di tasca propria, investimenti e apporti, sottrae ciò che è stato restituito, e calcola il conguaglio", async () => {
+    const { partnerEquilibrium } = await import("@/lib/domain/partners");
+    const docs: FinDocument[] = [{ ...expense, id: "x", totalCents: 100000, netCents: 100000, vatCents: 0, vatBp: 0 }];
+    const pays: Payment[] = [{ id: "p", documentId: "x", paidOn: "2026-02-01", amountCents: 100000, method: "carta", payer: "socio", partnerId: "A" }];
+    const movs: PartnerMovement[] = [
+      { id: "1", partnerId: "A", type: "apporto_non_monetario", amountCents: 300000, occurredOn: "2026-03-01", description: "Compenso marketing rinunciato" },
+      { id: "2", partnerId: "B", type: "conferimento", amountCents: 600000, occurredOn: "2026-01-01", description: "Denaro" },
+      { id: "3", partnerId: "A", type: "rimborso", amountCents: 20000, occurredOn: "2026-04-01", description: "Rimborso" },
+      { id: "4", partnerId: "A", type: "conversione_in_capitale", amountCents: 10000, occurredOn: "2026-04-02", description: "" },
+    ];
+    const eq = partnerEquilibrium(["A", "B"], buildLedger(pays, docs, movs), [
+      { partnerId: "A", shareBp: 5000, validFrom: "2026-01-01" },
+      { partnerId: "B", shareBp: 5000, validFrom: "2026-01-01" },
+    ]);
+    // A: 1.000 spese + 3.000 apporti − 200 rimborso = 3.800 ; B: 6.000 → totale 9.800, metà 4.900
+    expect(eq.totalCents).toBe(980000);
+    const a = eq.partners.find((p) => p.partnerId === "A")!;
+    expect(a).toMatchObject({ netCents: 380000, fairCents: 490000, deltaCents: -110000 });
+    expect(a.groups).toMatchObject({ spese: 100000, apporti: 300000, ricevuti: -20000 });
+    expect(eq.transfers).toEqual([{ fromPartnerId: "A", toPartnerId: "B", amountCents: 110000 }]);
+  });
+});

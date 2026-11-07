@@ -9,7 +9,8 @@ import { DeleteMovementButton } from "@/components/finance/delete-movement";
 import Link from "next/link";
 import { getDataset } from "@/lib/data/source";
 import { partnersOverview } from "@/lib/data/queries";
-import { MOVEMENT_LABELS, suggestSettlement } from "@/lib/domain/partners";
+import { EQUILIBRIUM_LABELS, MOVEMENT_LABELS, suggestSettlement } from "@/lib/domain/partners";
+import { SettleButton } from "@/components/finance/settle-button";
 import { capitalize, formatDate } from "@/lib/format";
 import { formatEuro, formatPercentBp } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -73,83 +74,115 @@ export default async function SociPage({ searchParams }: { searchParams: Promise
         ))}
       </div>
 
-      <Panel className="mt-5">
+      <Panel className="mt-5 overflow-hidden">
         <PanelHeader
-          title="Equilibrio degli investimenti"
-          description="Quanto ha messo ciascun socio rispetto alla sua quota: denaro, apporti non monetari e crediti rinunciati."
+          title="Equilibrio tra i soci"
+          description="Tutto quello che ciascuno ha messo nell'attività, meno quello che ha ricevuto indietro, confrontato con la sua quota."
           action={<AmountKind kind="effettivo" />}
         />
-        {o.equilibrium && o.breakdown.some((b) => b.netCents !== 0) ? (
-          <div className="p-5 sm:px-6">
-            {(() => {
-              const max = Math.max(...o.breakdown.map((b) => b.cashCents + b.nonCashCents + b.convertedCents), 1);
-              return (
-                <ul className="space-y-5">
-                  {o.breakdown.map((b) => {
-                    const p = ds.partners.find((x) => x.id === b.partnerId)!;
-                    const eq = o.equilibrium!.find((e) => e.partnerId === b.partnerId)!;
-                    const seg = [
-                      { label: "Denaro", v: b.cashCents, cls: "bg-ink" },
-                      { label: "Apporti non monetari", v: b.nonCashCents, cls: "bg-brand" },
-                      { label: "Crediti rinunciati", v: b.convertedCents, cls: "bg-ash/60" },
-                    ];
+        {o.overall && o.overall.totalCents !== 0 ? (
+          <>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[520px] text-[15px]">
+                <thead>
+                  <tr className="border-y border-line bg-paper/60 text-right text-[13px] text-muted-foreground">
+                    <th className="px-5 py-2.5 text-left font-normal sm:px-6">Cosa ha messo</th>
+                    {o.overall.partners.map((r) => (
+                      <th key={r.partnerId} className="px-5 py-2.5 font-normal sm:px-6">
+                        <span className="inline-flex items-center gap-2">
+                          <PartnerAvatar partner={ds.partners.find((p) => p.id === r.partnerId)} className="size-5 text-[9px]" />
+                          {ds.partners.find((p) => p.id === r.partnerId)?.name}
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(Object.keys(EQUILIBRIUM_LABELS) as (keyof typeof EQUILIBRIUM_LABELS)[])
+                    .filter((g) => o.overall!.partners.some((r) => r.groups[g] !== 0))
+                    .map((g) => (
+                      <tr key={g} className="border-b border-line/70 text-right">
+                        <th scope="row" className="px-5 py-2.5 text-left font-normal text-muted-foreground sm:px-6">
+                          {EQUILIBRIUM_LABELS[g]}
+                        </th>
+                        {o.overall!.partners.map((r) => (
+                          <td key={r.partnerId} className="px-5 py-2.5 sm:px-6">
+                            {r.groups[g] ? <Money cents={r.groups[g]} /> : <span className="text-muted-foreground">—</span>}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  <tr className="border-b border-line text-right font-semibold">
+                    <th scope="row" className="px-5 py-3 text-left sm:px-6">Totale messo</th>
+                    {o.overall.partners.map((r) => (
+                      <td key={r.partnerId} className="px-5 py-3 sm:px-6"><Money cents={r.netCents} /></td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-line/70 text-right">
+                    <th scope="row" className="px-5 py-2.5 text-left font-normal text-muted-foreground sm:px-6">
+                      Sua parte del totale (<Money cents={o.overall.totalCents} />)
+                    </th>
+                    {o.overall.partners.map((r) => (
+                      <td key={r.partnerId} className="px-5 py-2.5 sm:px-6">
+                        <Money cents={r.fairCents} /> <span className="text-[13px] text-muted-foreground">{formatPercentBp(r.shareBp, 0)}</span>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="text-right">
+                    <th scope="row" className="px-5 py-3 text-left font-medium sm:px-6">Differenza</th>
+                    {o.overall.partners.map((r) => (
+                      <td key={r.partnerId} className={`px-5 py-3 font-semibold sm:px-6 ${r.deltaCents > 0 ? "text-olive" : r.deltaCents < 0 ? "text-amber" : ""}`}>
+                        <Money cents={r.deltaCents} sign />
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="m-5 rounded-[14px] bg-paper p-4 sm:mx-6">
+              {o.overall.transfers.length === 0 ? (
+                <p className="text-[15px]">Siete in pari: ognuno ha messo esattamente la sua parte.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {o.overall.transfers.map((t) => {
+                    const from = ds.partners.find((p) => p.id === t.fromPartnerId)!;
+                    const to = ds.partners.find((p) => p.id === t.toPartnerId)!;
                     return (
-                      <li key={b.partnerId}>
-                        <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <span className="inline-flex items-center gap-2 text-[15px] font-medium">
-                            <PartnerAvatar partner={p} className="size-5 text-[9px]" /> {p.name}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            <Money cents={b.netCents} className="font-medium text-ink" /> · {formatPercentBp(eq.actualShareBp, 0)} del totale, quota{" "}
-                            {formatPercentBp(eq.shareBp, 0)}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex h-2.5 gap-[2px] overflow-hidden rounded-full bg-sand" role="img" aria-label={seg.map((x) => `${x.label} ${formatEuro(x.v)}`).join(", ")}>
-                          {seg.filter((x) => x.v > 0).map((x) => (
-                            <span key={x.label} className={x.cls} style={{ width: `${(x.v / max) * 100}%` }} />
-                          ))}
-                        </div>
-                        <p className="mt-1.5 flex flex-wrap gap-x-4 text-[13px] text-muted-foreground">
-                          {seg.map((x) => (
-                            <span key={x.label}>
-                              {x.label} <Money cents={x.v} round />
-                            </span>
-                          ))}
-                          {b.withdrawnCents ? <span>Prelievi −<Money cents={b.withdrawnCents} round /></span> : null}
+                      <li key={`${t.fromPartnerId}-${t.toPartnerId}`} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-[15px]">
+                          <span className="font-medium">{to.name}</span> ha coperto <Money cents={t.amountCents} className="font-semibold" /> della
+                          parte di <span className="font-medium">{from.name}</span>. Per pareggiare, {from.name} può dargli{" "}
+                          <Money cents={t.amountCents} className="font-semibold" />, oppure mettere{" "}
+                          <Money cents={t.amountCents * 2} className="font-semibold" /> nell&apos;attività.
                         </p>
+                        {canEdit ? (
+                          <SettleButton
+                            fromId={from.id}
+                            fromName={from.name}
+                            toId={to.id}
+                            toName={to.name}
+                            amountCents={t.amountCents}
+                            today={ds.today}
+                          />
+                        ) : null}
                       </li>
                     );
                   })}
                 </ul>
-              );
-            })()}
-            <div className="mt-6 rounded-[14px] bg-paper p-4 text-[15px]">
-              {o.equilibrium.every((e) => e.toLevelCents === 0) ? (
-                <p>I soci sono in pari rispetto alle quote.</p>
-              ) : (
-                o.equilibrium
-                  .filter((e) => e.toLevelCents > 0)
-                  .map((e) => (
-                    <p key={e.partnerId}>
-                      Per pareggiare, <span className="font-medium">{ds.partners.find((x) => x.id === e.partnerId)?.name}</span> dovrebbe apportare
-                      ancora <Money cents={e.toLevelCents} className="font-semibold" />, in denaro o con apporti non monetari.
-                    </p>
-                  ))
               )}
             </div>
-            <div className="mt-3 flex items-center gap-4 text-[12px] text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ink" /> Denaro</span>
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-brand" /> Apporti non monetari</span>
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ash/60" /> Crediti rinunciati</span>
-            </div>
-          </div>
+            <p className="px-5 pb-5 text-[13px] text-muted-foreground sm:px-6">
+              Le spese pagate di tasca propria contano finché l&apos;azienda non le rimborsa; i rimborsi ricevuti le riducono. Gli apporti non monetari
+              valgono quanto concordato tra voi.
+            </p>
+          </>
         ) : (
           <EmptyState
-            title={o.shares ? "Nessun investimento registrato" : "Quote dei soci non impostate"}
+            title={o.shares ? "Ancora niente da confrontare" : "Quote dei soci non impostate"}
             description={
               o.shares
-                ? "Registra conferimenti in denaro, apporti non monetari o crediti convertiti con “Movimento socio”."
-                : "Imposta le quote in Impostazioni per vedere chi è in pari."
+                ? "Quando un socio paga una spesa, investe denaro o registra un apporto, qui vedi chi sta coprendo la parte dell'altro."
+                : "Imposta le quote in Impostazioni per vedere l'equilibrio tra i soci."
             }
           />
         )}

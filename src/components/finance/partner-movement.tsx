@@ -25,7 +25,7 @@ const HELP: Record<string, string> = {
   rimborso: "L'azienda rimborsa al socio spese anticipate.",
   versamento: "Il socio versa denaro all'azienda: scegli su quale conto.",
   prelievo: "Prelievo o distribuzione di utili dal conto capitale.",
-  compensazione: "Un socio paga l'altro direttamente: il credito passa da uno all'altro.",
+  compensazione: "Un socio paga l'altro direttamente (conguaglio): chi paga prende il credito verso l'azienda di chi riceve.",
 };
 
 export function PartnerMovementDialog({ partners, today }: { partners: Partner[]; today: string }) {
@@ -77,7 +77,7 @@ export function PartnerMovementDialog({ partners, today }: { partners: Partner[]
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="pm-partner">{type === "compensazione" ? "Chi cede il credito" : "Socio"}</Label>
+              <Label htmlFor="pm-partner">{type === "compensazione" ? "Chi riceve i soldi" : "Socio"}</Label>
               <NativeSelect id="pm-partner" className="mt-1.5" {...register("partnerId")}>
                 {partners.map((p) => (
                   <NativeSelectOption key={p.id} value={p.id}>
@@ -88,7 +88,7 @@ export function PartnerMovementDialog({ partners, today }: { partners: Partner[]
             </div>
             {type === "compensazione" ? (
               <div>
-                <Label htmlFor="pm-cp">Chi lo riceve</Label>
+                <Label htmlFor="pm-cp">Chi paga</Label>
                 <NativeSelect id="pm-cp" className="mt-1.5" {...register("counterpartPartnerId")}>
                   {partners.map((p) => (
                     <NativeSelectOption key={p.id} value={p.id}>
