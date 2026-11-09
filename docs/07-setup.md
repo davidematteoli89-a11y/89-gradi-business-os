@@ -83,10 +83,16 @@ Ruoli: `admin` (tutto, incluse impostazioni e quote), `editor` (tutti i dati ope
 | `npm run build` | build di produzione |
 | `npm run check` | typecheck + lint + test |
 
-## Deploy su Vercel (quando autorizzato)
+## Pubblicazione attuale
+- App: **https://89-gradi-business-os.vercel.app** (progetto Vercel `89-gradi-business-os`, regione Francoforte), collegata al repository GitHub `davidematteoli89-a11y/89-gradi-business-os`: ogni push su `main` pubblica in produzione.
+- Variabili impostate su Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `DEMO_DATA` non è impostata.
+- Protezione Vercel solo sulle anteprime; la produzione è protetta dal login dell'app.
+- In Dady OS: organizzazione **89 Gradi** (`/org/89-gradi`) con il modulo "89 Gradi Business OS", che apre l'app in una nuova scheda. Gli accessi ai dati restano gestiti in Impostazioni di 89 Gradi.
+
+## Deploy su Vercel (nuova installazione)
 1. Importa il repository in Vercel.
 2. Imposta le due variabili Supabase per Production e Preview (Preview → progetto Supabase di sviluppo).
 3. **Non** impostare `DEMO_DATA` in Production.
 4. In Supabase → Authentication → URL Configuration aggiungi il dominio Vercel.
 
-Nessun deploy è stato eseguito.
+
